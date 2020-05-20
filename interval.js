@@ -61,11 +61,42 @@ voiceZeroInput.onblur = makeOnblur(0, voiceZeroInput, voiceZeroDisplay);
 voiceOneInput.onblur = makeOnblur(1, voiceOneInput, voiceOneDisplay);
 
 // display frequency information
+const notes = [
+    "A", "B♭", "B", "C", "D♭", "D",
+    "E♭", "E", "F", "F♯", "G", "A♭",
+];
+
+function frequencyToKey(frequency) {
+    return 69 + 12 * Math.log2(frequency / 440);
+}
+
+function keyToFrequency(key) {
+    return 440 * Math.pow(2, (key - 69) / 12);
+}
+
+function ratioToCents(frequencyOne, frequencyTwo) {
+    return 1200 * Math.log2(frequencyOne / frequencyTwo);
+}
+
 function showFreq(display, voice, frequency) {
     if (voices[voice].osc === null || frequency <= 0) {
         display.textContent = `Voice ${voice} off`;
     } else {
-        display.textContent = `Voice ${voice} at ${frequency}Hz`;
+        const key = Math.floor(frequencyToKey(frequency) + 0.5);
+        const note = notes[(key + 3) % 12];
+        const octave = Math.floor((key + 3) / 12) - 2
+        const key_frequency = keyToFrequency(key);
+        var adjust = "";
+        if (frequency != key_frequency) {
+            const cents = ratioToCents(frequency, key_frequency);
+            if (frequency > key_frequency) {
+                adjust += "+";
+            }
+            adjust += `${cents.toFixed(2)}¢`;
+        }
+        display.textContent =
+            `Voice ${voice} at ${frequency.toFixed(2)}Hz` +
+            ` (${note}${octave}${adjust})`;
     }
 }
 
@@ -74,8 +105,10 @@ const showCents = function() {
     const frequencyOne = voices[0].frequency;
     const frequencyTwo = voices[1].frequency;
     if (frequencyOne > 0 && frequencyTwo > 0) {
-        const centsDistance = Math.abs(1200 * Math.log2(frequencyOne / frequencyTwo));
-        centsDisplay.textContent =  `Cents distance ${centsDistance}`;
+        const centsDistance =
+              ratioToCents(frequencyTwo, frequencyOne);
+        centsDisplay.textContent =
+            `Cents distance ${centsDistance.toFixed(2)}`;
     } else {
         centsDisplay.textContent =  "";
     }
