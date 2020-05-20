@@ -125,30 +125,40 @@ const showCents = function() {
 // voices[1].osc ---
 //
 
-// get a web audio context
-const audioContext = new window.AudioContext();
+// must only start audio after a user gesture
+var audioContext = null;
+var masterGain = null;
+function startAudio() {
+    // only has to be done once
+    if (audioContext !== null)
+        return;
 
-// set up a gain node to output device
-const masterGain = audioContext.createGain();
-masterGain.gain.setValueAtTime(0.2, audioContext.currentTime); 
-masterGain.connect(audioContext.destination);
+    // get a web audio context
+    audioContext = new window.AudioContext();
 
+    // set up a gain node to output device
+    masterGain = audioContext.createGain();
+    masterGain.gain.setValueAtTime(0.2, audioContext.currentTime); 
+    masterGain.connect(audioContext.destination);
+}
 
 // instanatiate a voice, route it, and play it
-const play = function(i, frequency) {
+function play(i, frequency) {
+    startAudio();
     voices[i] = {osc: osc(frequency), frequency: frequency};
     voices[i].osc.connect(masterGain);
     voices[i].osc.start();
 }
 
 // stop a voice
-const stop = function(i) {
+function stop(i) {
+    startAudio();
     voices[i].osc.stop();
     voices[i] = {osc: null, frequency: 0};
 }
 
 // set up and return an oscillator
-const osc = function(frequency) {
+function osc(frequency) {
     let osc = audioContext.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
