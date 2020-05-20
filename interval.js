@@ -28,14 +28,13 @@ function makeOnclick(voice, input, control, display) {
         if (voices[voice].osc === null && frequency > 0) {
             play(voice, frequency);
             control.className = "fa fa-stop button"
-            display.textContent = `Voice ${voice} at ${frequency}Hz`;
         } else {
             if (voices[voice].osc !== null) {
                 stop(voice);
             }
             control.className = "fa fa-play button"
-            display.textContent = `Voice ${voice} off`;
         }
+        showFreq(display, voice, frequency);
         showCents();
     };
 }
@@ -49,14 +48,10 @@ voiceOneControl.onclick = makeOnclick(
 function makeOnblur(voice, input, display) {
     return function(event) {
         const frequency = input.value | 0;
-        if (voices[voice].osc !== null) {
+        if (voices[voice].osc !== null && frequency > 0) {
             stop(voice);
-            if (frequency > 0) {
-                play(voice, frequency);
-                display.textContent = `Voice ${voice} at ${frequency}Hz`;
-            } else {
-                display.textContent = `Voice ${voice} off`;
-            }
+            play(voice, frequency);
+            showFreq(display, voice, frequency);
         }
         showCents();
     };
@@ -64,6 +59,15 @@ function makeOnblur(voice, input, display) {
 
 voiceZeroInput.onblur = makeOnblur(0, voiceZeroInput, voiceZeroDisplay);
 voiceOneInput.onblur = makeOnblur(1, voiceOneInput, voiceOneDisplay);
+
+// display frequency information
+function showFreq(display, voice, frequency) {
+    if (voices[voice].osc === null || frequency <= 0) {
+        display.textContent = `Voice ${voice} off`;
+    } else {
+        display.textContent = `Voice ${voice} at ${frequency}Hz`;
+    }
+}
 
 // calculate and display cents distance between voices
 const showCents = function() {
