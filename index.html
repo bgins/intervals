@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Interval Playground</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.3.0/milligram.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css"
+    />
+    <style>
+      .button {
+        padding: 10px 20px;
+        margin-right: 10px;
+      }
+      .voice-display {
+        font-size: 2.5rem;
+      }
+      .inputs {
+        margin-top: 15px;
+      }
+      .container-fluid {
+        padding: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="row">
+        <h1>Interval Playground</h1>
+      </div>
+      <div class="row">
+        <button id="voiceZeroControl" class="fa fa-play button"></button>
+        <span id="voiceZeroDisplay" class="voice-display">Voice zero off</span>
+      </div>
+      <div class="row">
+        <button id="voiceOneControl" class="fa fa-play button"></button>
+        <span id="voiceOneDisplay" class="voice-display">Voice one off</span>
+      </div>
+    </div>
+
+    <div class="container inputs">
+      <div class="row">
+        <label for="voiceZeroInput">
+          Voice zero frequency
+          <input id="voiceZeroInput" type="text" />
+        </label>
+      </div>
+      <div class="row">
+        <label for="voiceOneInput">
+          Voice one frequency
+          <input id="voiceOneInput" type="text" />
+        </label>
+      </div>
+
+      <div class="row">
+        <p id="centsDisplay"></p>
+      </div>
+    </div>
+    <script src="interval.js"></script>
+  </body>
+</html>
