@@ -22,54 +22,48 @@ const centsDisplay = document.getElementById('centsDisplay')
 // EVENTS
 
 // set up play and pause event handlers
-voiceZeroControl.onclick = function(event) {
-    const frequency = voiceZeroInput.value | 0;
-    if (voices[0].osc === null) {
-        play(0, frequency);
-        voiceZeroControl.className = "fa fa-stop button"
-        voiceZeroDisplay.textContent = `Voice zero at ${frequency}Hz`;
-    } else {
-        stop(0);
-        voiceZeroControl.className = "fa fa-play button"
-        voiceZeroDisplay.textContent = "Voice zero off";
-    }
-    showCents();
-};
+function makeOnclick(voice, input, control, display) {
+    return function(event) {
+        const frequency = input.value | 0;
+        if (voices[voice].osc === null && frequency > 0) {
+            play(voice, frequency);
+            control.className = "fa fa-stop button"
+            display.textContent = `Voice ${voice} at ${frequency}Hz`;
+        } else {
+            if (voices[voice].osc !== null) {
+                stop(voice);
+            }
+            control.className = "fa fa-play button"
+            display.textContent = `Voice ${voice} off`;
+        }
+        showCents();
+    };
+}
 
-voiceOneControl.onclick = function(event) {
-    const frequency = voiceOneInput.value | 0;
-    if (voices[1].osc === null) {
-        play(1, frequency);
-        voiceOneControl.className = "fa fa-stop button"
-        voiceOneDisplay.textContent = `Voice one at ${frequency}Hz`;
-    } else {
-        stop(1);
-        voiceOneControl.className = "fa fa-play button"
-        voiceOneDisplay.textContent = "Voice one off";
-    }
-    showCents();
-};
+voiceZeroControl.onclick = makeOnclick(
+    0, voiceZeroInput, voiceZeroControl, voiceZeroDisplay);
+voiceOneControl.onclick = makeOnclick(
+    1, voiceOneInput, voiceOneControl, voiceOneDisplay);
 
 // update when inputs lose focus and a voice is playing
-voiceZeroInput.onblur = function(event) {
-    const frequency = voiceZeroInput.value | 0;
-    if (voices[0].osc !== null) {
-        stop(0);
-        play(0, frequency);
-        voiceZeroDisplay.textContent = `Voice zero at ${frequency}Hz`;
-    }
-    showCents();
+function makeOnblur(voice, input, display) {
+    return function(event) {
+        const frequency = input.value | 0;
+        if (voices[voice].osc !== null) {
+            stop(voice);
+            if (frequency > 0) {
+                play(voice, frequency);
+                display.textContent = `Voice ${voice} at ${frequency}Hz`;
+            } else {
+                display.textContent = `Voice ${voice} off`;
+            }
+        }
+        showCents();
+    };
 }
 
-voiceOneInput.onblur = function(event) {
-    const frequency = voiceOneInput.value | 0;
-    if (voices[1].osc !== null) {
-        stop(1);
-        play(1, frequency);
-        voiceOneDisplay.textContent = `Voice one at ${frequency}Hz`;
-    }
-    showCents();
-}
+voiceZeroInput.onblur = makeOnblur(0, voiceZeroInput, voiceZeroDisplay);
+voiceOneInput.onblur = makeOnblur(1, voiceOneInput, voiceOneDisplay);
 
 // calculate and display cents distance between voices
 const showCents = function() {
