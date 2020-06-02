@@ -22,53 +22,82 @@ const centsDisplay = document.getElementById('centsDisplay')
 // EVENTS
 
 // set up play and pause event handlers
-voiceZeroControl.onclick = function(event) {
-    const frequency = voiceZeroInput.value | 0;
-    if (voices[0].osc === null) {
-        play(0, frequency);
-        voiceZeroControl.className = "fa fa-stop button"
-        voiceZeroDisplay.textContent = `Voice zero at ${frequency}Hz`;
-    } else {
-        stop(0);
-        voiceZeroControl.className = "fa fa-play button"
-        voiceZeroDisplay.textContent = "Voice zero off";
-    }
-    showCents();
-};
-
-voiceOneControl.onclick = function(event) {
-    const frequency = voiceOneInput.value | 0;
-    if (voices[1].osc === null) {
-        play(1, frequency);
-        voiceOneControl.className = "fa fa-stop button"
-        voiceOneDisplay.textContent = `Voice one at ${frequency}Hz`;
-    } else {
-        stop(1);
-        voiceOneControl.className = "fa fa-play button"
-        voiceOneDisplay.textContent = "Voice one off";
-    }
-    showCents();
-};
-
-// update when inputs lose focus and a voice is playing
-voiceZeroInput.onblur = function(event) {
-    const frequency = voiceZeroInput.value | 0;
-    if (voices[0].osc !== null) {
-        stop(0);
-        play(0, frequency);
-        voiceZeroDisplay.textContent = `Voice zero at ${frequency}Hz`;
-    }
-    showCents();
+function makeOnclick(voice, input, control, display) {
+    return function(event) {
+        const frequency = input.value | 0;
+        if (voices[voice].osc === null && frequency > 0) {
+            play(voice, frequency);
+            control.className = "fa fa-stop button"
+        } else {
+            if (voices[voice].osc !== null) {
+                stop(voice);
+            }
+            control.className = "fa fa-play button"
+        }
+        showFreq(display, voice, frequency);
+        showCents();
+    };
 }
 
-voiceOneInput.onblur = function(event) {
-    const frequency = voiceOneInput.value | 0;
-    if (voices[1].osc !== null) {
-        stop(1);
-        play(1, frequency);
-        voiceOneDisplay.textContent = `Voice one at ${frequency}Hz`;
+voiceZeroControl.onclick = makeOnclick(
+    0, voiceZeroInput, voiceZeroControl, voiceZeroDisplay);
+voiceOneControl.onclick = makeOnclick(
+    1, voiceOneInput, voiceOneControl, voiceOneDisplay);
+
+// update when inputs lose focus and a voice is playing
+function makeOnblur(voice, input, display) {
+    return function(event) {
+        const frequency = input.value | 0;
+        if (voices[voice].osc !== null && frequency > 0) {
+            stop(voice);
+            play(voice, frequency);
+            showFreq(display, voice, frequency);
+        }
+        showCents();
+    };
+}
+
+voiceZeroInput.onblur = makeOnblur(0, voiceZeroInput, voiceZeroDisplay);
+voiceOneInput.onblur = makeOnblur(1, voiceOneInput, voiceOneDisplay);
+
+// display frequency information
+const notes = [
+    "A", "B♭", "B", "C", "D♭", "D",
+    "E♭", "E", "F", "F♯", "G", "A♭",
+];
+
+function frequencyToKey(frequency) {
+    return 69 + 12 * Math.log2(frequency / 440);
+}
+
+function keyToFrequency(key) {
+    return 440 * Math.pow(2, (key - 69) / 12);
+}
+
+function ratioToCents(frequencyOne, frequencyTwo) {
+    return 1200 * Math.log2(frequencyOne / frequencyTwo);
+}
+
+function showFreq(display, voice, frequency) {
+    if (voices[voice].osc === null || frequency <= 0) {
+        display.textContent = `Voice ${voice} off`;
+    } else {
+        const key = Math.floor(frequencyToKey(frequency) + 0.5);
+        const note = notes[(key + 3) % 12];
+        const octave = Math.floor((key + 3) / 12) - 2
+        const key_frequency = keyToFrequency(key);
+        var adjust = "";
+        if (frequency != key_frequency) {
+            const cents = ratioToCents(frequency, key_frequency);
+            if (frequency > key_frequency) {
+                adjust += "+";
+            }
+            adjust += `${cents.toFixed(2)}¢`;
+        }
+        display.textContent =
+            `Voice ${voice} at ${frequency.toFixed(2)}Hz` +
+            ` (${note}${octave}${adjust})`;
     }
-    showCents();
 }
 
 // calculate and display cents distance between voices
@@ -76,8 +105,10 @@ const showCents = function() {
     const frequencyOne = voices[0].frequency;
     const frequencyTwo = voices[1].frequency;
     if (frequencyOne > 0 && frequencyTwo > 0) {
-        const centsDistance = Math.abs(1200 * Math.log2(frequencyOne / frequencyTwo));
-        centsDisplay.textContent =  `Cents distance ${centsDistance}`;
+        const centsDistance =
+              ratioToCents(frequencyTwo, frequencyOne);
+        centsDisplay.textContent =
+            `Cents distance ${centsDistance.toFixed(2)}`;
     } else {
         centsDisplay.textContent =  "";
     }
@@ -94,30 +125,40 @@ const showCents = function() {
 // voices[1].osc ---
 //
 
-// get a web audio context
-const audioContext = new window.AudioContext();
+// must only start audio after a user gesture
+var audioContext = null;
+var masterGain = null;
+function startAudio() {
+    // only has to be done once
+    if (audioContext !== null)
+        return;
 
-// set up a gain node to output device
-const masterGain = audioContext.createGain();
-masterGain.gain.setValueAtTime(0.2, audioContext.currentTime); 
-masterGain.connect(audioContext.destination);
+    // get a web audio context
+    audioContext = new window.AudioContext();
 
+    // set up a gain node to output device
+    masterGain = audioContext.createGain();
+    masterGain.gain.setValueAtTime(0.2, audioContext.currentTime); 
+    masterGain.connect(audioContext.destination);
+}
 
 // instanatiate a voice, route it, and play it
-const play = function(i, frequency) {
+function play(i, frequency) {
+    startAudio();
     voices[i] = {osc: osc(frequency), frequency: frequency};
     voices[i].osc.connect(masterGain);
     voices[i].osc.start();
 }
 
 // stop a voice
-const stop = function(i) {
+function stop(i) {
+    startAudio();
     voices[i].osc.stop();
     voices[i] = {osc: null, frequency: 0};
 }
 
 // set up and return an oscillator
-const osc = function(frequency) {
+function osc(frequency) {
     let osc = audioContext.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
